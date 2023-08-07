@@ -1,12 +1,29 @@
-use crate::elementos::Movimiento;
+use std::fmt::Display;
+
+use super::movimiento;
 use chrono::{NaiveDate, offset};
 
 /// Representa un asiento contable, con uno o varios movimientos.
 #[derive(PartialEq, Debug)]
 pub struct Asiento {
-    movimientos: Vec<Movimiento>,
+    movimientos: Vec<movimiento::Movimiento>,
     concepto: String,
     fecha: NaiveDate, 
+}
+
+impl Display for Asiento {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:-^70}\n", self.concepto)?;
+
+        write!(f, "{:-^70}\n", &self.fecha.format("%Y-%m-%d"))?;
+
+        for movimiento in self.movimientos.iter() {
+            write!(f, "{}", movimiento)?;
+        }
+
+        Ok(())
+
+    }
 }
 
 impl Asiento {
@@ -21,7 +38,7 @@ impl Asiento {
     }
 
     /// Inserta un movimiento en el asiento
-    pub fn insertar_movimiento(&mut self, movimiento: Movimiento) {
+    pub fn insertar_movimiento(&mut self, movimiento: movimiento::Movimiento) {
         self.movimientos.push(movimiento);
     }
 
@@ -39,19 +56,6 @@ impl Asiento {
 
         self.fecha
     }
-
-    /// Devuelve una cadena legible del asiento y sus movimientos
-    pub fn imprimir(&self) -> String {
-        let mut cadena = format!("{:-^70}\n", self.concepto);
-
-        cadena.push_str(&format!("{:-^70}\n", &self.fecha.format("%Y-%m-%d")).to_string());
-
-        for movimiento in self.movimientos.iter() {
-            cadena.push_str(&movimiento.imprimir())
-        }
-
-        cadena
-    } 
 
 
 }

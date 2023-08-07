@@ -1,9 +1,23 @@
+use std::fmt::Display;
+
 /// Representa un movimiento
 #[derive(PartialEq, Debug)]
 pub struct Movimiento {
     importe: f64,
     cuenta_deudora: String,
     cuenta_acreedora: String,
+}
+
+impl Display for Movimiento {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "
+        {:<20} debe {:.2} € a {:>20}
+        ", self.cuenta_deudora,
+        self.importe,
+        self.cuenta_acreedora
+    )
+    }
 }
 
 impl Movimiento {
@@ -14,13 +28,4 @@ impl Movimiento {
         Movimiento { importe, cuenta_deudora, cuenta_acreedora }
     }
 
-    /// Crea una cadena legible del movimiento
-    pub fn imprimir(&self) -> String {
-        format!("
-        {:<20} debe {:.2} € a {:>20}
-        ", self.cuenta_deudora,
-        self.importe,
-        self.cuenta_acreedora
-    )
-    } 
 }

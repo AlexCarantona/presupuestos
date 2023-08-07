@@ -1,17 +1,41 @@
-use presupuestos::elementos::{Cuenta, Movimiento, Asiento, Masa, Patrimonios, Activos};
 
+use presupuestos::cuadro_contable::Cuadro;
 
 fn main() {
-    let cuenta1 = Cuenta::new("Supermercados", Masa::Patrimonio(Patrimonios::Gastos));
-    let cuenta2 = Cuenta::new("Caja Rural", Masa::Activo(Activos::ActivoCorriente));
-    let cuenta3 = Cuenta::new("Capital", Masa::Patrimonio(Patrimonios::Capital));
+    let mut cuadro = Cuadro::create();
 
-    let mut asiento = Asiento::new("Compra en el Alimerka");
+    let mut args = std::env::args();
 
-    let movimiento = Movimiento::new(30.00, cuenta1.nombre(), cuenta2.nombre());
-    asiento.insertar_movimiento(movimiento);
-    let movimiento1 = Movimiento::new(50.00, cuenta2.nombre(), cuenta3.nombre());
-    asiento.insertar_movimiento(movimiento1);
+    // Ruta del programa.
+    args.next();
 
-    println!("{}", asiento.imprimir());
+    // Comando.
+    match args.next() {
+        Some(v) => {
+            match v.as_str() {
+                "--ayuda" => ayuda(),
+                _ => ayuda()
+            } 
+        },
+        _ => ayuda(),
+    }
+
+    while let Some(v) = args.next() {
+        println!("Me has llamado con el argumento: {}", v);
+    }
+
+
+
+}
+
+
+fn ayuda() {
+    println!(
+"\
+¡Bienvenido a mi gestor contable!\n
+Puedes realizar alguna de estas acciones:\n
+        --help: Muestra esta ayuda\n
+        --plantillas: Crea en el directorio de ejecución plantillas para hacer un cuadro contable\n
+"
+    );
 }

@@ -1,5 +1,4 @@
-use std::rc::Rc;
-
+use std::fmt::Display;
 
 /// Activos
 #[derive(Debug, PartialEq, Hash, Eq)]
@@ -32,6 +31,8 @@ pub enum Masa {
     Patrimonio(Patrimonios)
 }
 
+#[derive(PartialEq, Debug)]
+pub struct CuentaError;
 
 /// Representa una cuenta
 #[derive(PartialEq, Debug)]
@@ -43,6 +44,13 @@ pub struct Cuenta {
     /// La masa patrimonial a la que pertenece la cuenta.
     masa: Masa,
 
+}
+
+impl Display for Cuenta {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:_<25}{:_>25} €", self.nombre, self.saldo)
+    }
 }
 
 impl Cuenta {

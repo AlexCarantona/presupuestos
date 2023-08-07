@@ -1,35 +1,23 @@
+use std::fmt::Display;
+
 use chrono::NaiveDate;
 
-mod cuadro_contable;
-
 mod cuenta;
-//pub use cuenta::cuenta::Cuenta;
-//pub use cuenta::cuenta::Masa;
-//pub use cuenta::cuenta::Patrimonios;
-//pub use cuenta::cuenta::Activos;
-//pub use cuenta::Pasivos;
-
 mod movimiento;
-//pub use movimiento::movimiento::Movimiento;
-
 mod asiento;
-//pub use asiento::asiento::Asiento;
-//
-//use chrono::NaiveDate;
-//
-//use crate::elementos::{cuenta::Masa, cuenta::Cuenta, movimiento::Movimiento, asiento::Asiento, cuenta::Patrimonios, cuenta::Activos};
-
+mod presupuesto;
 
 /// Este struct almacena las cuentas que se usarán.
-/// Su misión principal es validar que existan cuando se inserta un movimiento,
-/// además de modificar los saldos cuando procede.
+/// Su misión principal es realizar y centralizar las operaciones
 #[derive(Debug, PartialEq)]
 pub struct Cuadro {
     /// Almacena las cuentas
     cuentas: Vec<cuenta::Cuenta>,
+    /// Almacena los asientos
     asientos: Vec<asiento::Asiento>
 
 }
+
 
 impl Cuadro {
 
@@ -39,9 +27,19 @@ impl Cuadro {
     }
 
     /// Envuelve la creación de una cuenta::Cuenta
-    pub fn insertar_cuenta(&mut self, nombre_cuenta: &str, masa_cuenta: cuenta::Masa) {
+    fn crear_cuenta(&mut self, nombre_cuenta: &str, masa_cuenta: cuenta::Masa) {
         let cuenta = cuenta::Cuenta::new(nombre_cuenta, masa_cuenta);
         self.cuentas.push(cuenta);
+    }
+
+    /// Crea una cuenta de gastos
+    pub fn crear_cuenta_gasto(&mut self, nombre_cuenta: &str) {
+        self.crear_cuenta(nombre_cuenta, cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
+    }
+
+    /// Crea una cuenta de activo corriente
+    pub fn crear_cuenta_activo_corriente(&mut self, nombre_cuenta: &str) {
+        self.crear_cuenta(nombre_cuenta, cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
     }
 
     /// Envuelve la creación de un movimiento::Movimiento, rompe el programa si falla
@@ -94,7 +92,7 @@ impl Cuadro {
     }
 
     /// Encuentra una cuenta y devuelve su referencia mutable si la encuentra
-    pub fn cuenta(&mut self, nombre_cuenta: &str) -> Option<&mut cuenta::Cuenta> {
+    fn cuenta(&mut self, nombre_cuenta: &str) -> Option<&mut cuenta::Cuenta> {
         for id in 0..self.cuentas.len() {
             if String::from(nombre_cuenta) == self.cuentas[id].nombre() {
                 return Some(&mut self.cuentas[id])
@@ -103,7 +101,27 @@ impl Cuadro {
         None
     }
 
+    /// Encuentra una cuenta y devuelve su referencia inmutable si la encuentra
+    pub fn cuenta_pub(&self, nombre_cuenta: &str) -> Option<&cuenta::Cuenta> {
+        for id in 0..self.cuentas.len() {
+            if String::from(nombre_cuenta) == self.cuentas[id].nombre() {
+                return Some(&self.cuentas[id])
+            }
+        };
+
+        None
+    }
+
    
+}
+
+impl Display for Cuadro {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for cuenta in &self.cuentas {
+            println!("{}", cuenta)
+        };
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -114,20 +132,18 @@ mod tests {
     fn setupcuadro() -> Cuadro {
         let mut cuadro = Cuadro::create();
 
-        cuadro.insertar_cuenta("Capital", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
-        cuadro.insertar_cuenta("Bancos", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
-        cuadro.insertar_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
-
-
+        cuadro.crear_cuenta("Capital", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
+        cuadro.crear_cuenta("Bancos", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
+        cuadro.crear_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
         cuadro
 
     }
 
     #[test]
-    fn insertar_cuenta_crea_e_inserta_una_cuenta() {
+    fn crear_cuenta_crea_e_inserta_una_cuenta() {
         let mut cuadro = Cuadro::create();
 
-        cuadro.insertar_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
+        cuadro.crear_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
 
         assert_eq!(cuadro.cuentas.len(), 1);
         assert_eq!(cuadro.cuentas[0].saldo(), 0.00);
@@ -138,7 +154,7 @@ mod tests {
     fn validar_cuenta_devuelve_true_nombre_cuenta() {
         let mut cuadro = Cuadro::create();
 
-        cuadro.insertar_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
+        cuadro.crear_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
 
         assert!(cuadro.validar_cuenta("cuenta::Cuenta 1"));
         assert!(!cuadro.validar_cuenta("cuenta::Cuenta 2"));
@@ -148,7 +164,7 @@ mod tests {
     fn cuenta_devuelve_referencia_mutable_a_cuenta() {
         let mut cuadro = Cuadro::create();
 
-        cuadro.insertar_cuenta("cuenta::Cuenta test", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
+        cuadro.crear_cuenta("cuenta::Cuenta test", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
 
         assert_eq!(cuadro.cuenta("cuenta::Cuenta test"), Some(&mut cuenta::Cuenta::new("cuenta::Cuenta test", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital))));
         assert_eq!(cuadro.cuenta("Ninguna"), None);
@@ -159,8 +175,8 @@ mod tests {
     fn insertar_movimiento_contable_crea_movimiento_y_actualiza_cuentas() {
         let mut cuadro = Cuadro::create();
 
-        cuadro.insertar_cuenta("Caja Rural", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
-        cuadro.insertar_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
+        cuadro.crear_cuenta("Caja Rural", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
+        cuadro.crear_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
 
         cuadro.crear_movimiento("Alimerka", "Caja Rural", 20.00);
 
