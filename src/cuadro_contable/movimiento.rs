@@ -1,31 +1,29 @@
-use std::fmt::Display;
+use super::cuenta::Cuenta;
 
 /// Representa un movimiento
 #[derive(PartialEq, Debug)]
-pub struct Movimiento {
+pub struct Movimiento<'a> {
     importe: f64,
-    cuenta_deudora: String,
-    cuenta_acreedora: String,
+    cuenta: &'a Cuenta,
 }
 
-impl Display for Movimiento {
+impl Movimiento<'_> {
 
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "
-        {:<20} debe {:.2} € a {:>20}
-        ", self.cuenta_deudora,
-        self.importe,
-        self.cuenta_acreedora
-    )
+    /// Almacena un movimiento con importe y cuenta.
+    pub fn new(importe: f64, cuenta: &Cuenta) -> Movimiento {
+
+        Movimiento { importe, cuenta }
     }
-}
 
-impl Movimiento {
+    /// Devuelve el importe.
+    pub fn importe(&self) -> f64 {
+        self.importe
+    }
 
-    /// Almacena un movimiento con importe y nombres de sus cuentas participantes.
-    pub fn new(importe: f64, cuenta_deudora: String, cuenta_acreedora: String) -> Movimiento {
+    /// Devuelve la cuenta.
+    pub fn cuenta(&self) -> &Cuenta {
 
-        Movimiento { importe, cuenta_deudora, cuenta_acreedora }
+        self.cuenta
     }
 
 }

@@ -2,27 +2,28 @@ use std::fmt::Display;
 
 use chrono::NaiveDate;
 
+use self::movimiento::Movimiento;
+
 mod cuenta;
-mod movimiento;
+pub mod movimiento;
 mod asiento;
-mod presupuesto;
 
 /// Este struct almacena las cuentas que se usarán.
 /// Su misión principal es realizar y centralizar las operaciones
 #[derive(Debug, PartialEq)]
-pub struct Cuadro {
+pub struct Cuadro<'a> {
     /// Almacena las cuentas
     cuentas: Vec<cuenta::Cuenta>,
     /// Almacena los asientos
-    asientos: Vec<asiento::Asiento>
+    asientos: Vec<asiento::Asiento<'a>>
 
 }
 
 
-impl Cuadro {
+impl Cuadro<'_> {
 
     /// Crea un nuevo cuadro de cuentas
-    pub fn create() -> Cuadro {
+    pub fn create() -> Cuadro<'static> {
         Cuadro { cuentas: vec![], asientos: vec![] }
     }
 
@@ -42,43 +43,26 @@ impl Cuadro {
         self.crear_cuenta(nombre_cuenta, cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
     }
 
-    /// Envuelve la creación de un movimiento::Movimiento, rompe el programa si falla
-    fn crear_movimiento(&mut self, nombre_cuenta_deudora: &str, nombre_cuenta_acreedora: &str, importe: f64) -> movimiento::Movimiento {
-        
-        let cuenta_deudora: String;
-        let cuenta_acreedora: String;
-
-        match self.cuenta(nombre_cuenta_deudora) {
-            Some(cuenta) => {
-                cuenta.incrementar_saldo(&importe);
-                cuenta_deudora = cuenta.nombre();
-            },
-            None => {panic!("La cuenta deudora no existe")}
-        };
-
-        match self.cuenta(nombre_cuenta_acreedora) {
-            Some(cuenta) => {
-                cuenta.reducir_saldo(&importe);
-                cuenta_acreedora = cuenta.nombre();
-            },
-            None => {panic!("La cuenta acreedora no existe")}
-        };
-
-        movimiento::Movimiento::new(importe, cuenta_deudora, cuenta_acreedora)
-
-    }
 
     /// Crea un asiento con, al menos, un movimiento
-    pub fn crear_asiento(&mut self, concepto: &str, fecha: Option<NaiveDate>, movimientos: Vec<(&str, &str, f64)>) {
+    pub fn crear_asiento(&mut self, concepto: &str, fecha: Option<NaiveDate>, debe: Vec<Movimiento>, haber: Vec<Movimiento>) {
         
         // Crea el asiento y deja la referencia modificable.
-        let mut asiento = asiento::Asiento::new(concepto);
+        let mut asiento = asiento::Asiento {
+                concepto: String::from(concepto),
+                debe: vec![],
+                haber: vec![],
+            };
         asiento.fecha(fecha);
 
-        // Crea los movimientos correspondientes y los guarda en el asiento
-        for movimiento in movimientos.iter() {
-            let m = self.crear_movimiento(movimiento.0, movimiento.1, movimiento.2);
-            asiento.insertar_movimiento(m);
+        // Inserta los movimientos del debe
+        for m in debe.into_iter() {
+            asiento.insertar_debe(m)
+        }
+
+        // Inserta los movimientos del haber
+        for  m in haber.into_iter() {
+            asiento.insertar_haber(m)
         }
 
         // Guarda el asiento
@@ -112,10 +96,15 @@ impl Cuadro {
         None
     }
 
+    pub fn asientos(&self) -> &Vec<asiento::Asiento> {
+
+        &self.asientos
+    }
+
    
 }
 
-impl Display for Cuadro {
+impl Display for Cuadro<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for cuenta in &self.cuentas {
             println!("{}", cuenta)
@@ -129,7 +118,7 @@ mod tests {
 
     use super::*;
 
-    fn setupcuadro() -> Cuadro {
+    fn setupcuadro() -> Cuadro<'static> {
         let mut cuadro = Cuadro::create();
 
         cuadro.crear_cuenta("Capital", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
@@ -171,70 +160,5 @@ mod tests {
 
     }
 
-    #[test]
-    fn insertar_movimiento_contable_crea_movimiento_y_actualiza_cuentas() {
-        let mut cuadro = Cuadro::create();
 
-        cuadro.crear_cuenta("Caja Rural", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
-        cuadro.crear_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
-
-        cuadro.crear_movimiento("Alimerka", "Caja Rural", 20.00);
-
-
-        if let Some(cuenta1) = cuadro.cuenta("Caja Rural") {
-            assert_eq!(cuenta1.saldo(), -20.00);
-        };
-        if let Some(cuenta2) = cuadro.cuenta("Alimerka") {
-            assert_eq!(cuenta2.saldo(), 20.00);
-        };
-
-
-    }
-
-    #[test]
-    fn crear_asiento_con_un_movimiento_crea_movimiento_y_modifica_saldos() {
-
-        let mut cuadro = setupcuadro();
-
-        let movimiento = vec![
-            ("Bancos", "Capital", 300.00)
-        ];
-
-        cuadro.crear_asiento("Un asiento", None, movimiento);
-
-
-        match cuadro.cuenta("Bancos") {
-            Some(v) => {assert_eq!(v.saldo(), 300.00)},
-            None => panic!("El saldo no se ha modificado")
-
-        }
-        
-    }
-
-    #[test]
-    fn crear_asiento_con_varios_movimientos() {
-        let mut cuadro = setupcuadro();
-
-        let movimientos = vec![
-            ("Bancos", "Capital", 300.00),
-            ("Alimerka", "Bancos", 20.00),
-        ];
-
-        cuadro.crear_asiento("Un asiento", None, movimientos);
-
-        match cuadro.cuenta("Capital") {
-            Some(v) => assert_eq!(v.saldo(), -300.00),
-            None => panic!("No se ha transferido el capital")
-        }
-
-        match cuadro.cuenta("Alimerka") {
-            Some(v) => assert_eq!(v.saldo(), 20.00),
-            None => panic!("No se ha cargo la cuenta de Alimerka")
-        }
-
-        match cuadro.cuenta("Bancos") {
-            Some(v) => assert_eq!(v.saldo(), 280.00),
-            None => panic!("No se han reflejado los movimientos del banco")
-        }
-    }
 }

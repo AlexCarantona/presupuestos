@@ -1,51 +1,79 @@
 use std::fmt::Display;
 
-use super::movimiento;
 use chrono::{NaiveDate, offset};
 
-/// Representa un asiento contable, con uno o varios movimientos.
+use super::movimiento::Movimiento;
+
+/// Representa un asiento contable.
 #[derive(PartialEq, Debug)]
-pub struct Asiento {
-    movimientos: Vec<movimiento::Movimiento>,
+pub struct Asiento<'a> {
+    debe: Vec<Movimiento<'a>>,
+    haber: Vec<Movimiento<'a>>,
     concepto: String,
     fecha: NaiveDate, 
 }
 
-impl Display for Asiento {
+impl Display for Asiento<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:-^70}\n", self.concepto)?;
 
-        write!(f, "{:-^70}\n", &self.fecha.format("%Y-%m-%d"))?;
+        write!(f, "+{:-^78}+\n", "-")?;
 
-        for movimiento in self.movimientos.iter() {
-            write!(f, "{}", movimiento)?;
+        write!(f, "|{:^78}|\n", self.concepto)?;
+
+        write!(f, "|{:^78}|\n", &self.fecha.format("%Y-%m-%d"))?;
+
+        write!(f, "+{:-^78}+\n", "-")?;
+
+        write!(f, "{:>41}\n", "|")?;
+
+
+        let mut debe_iter = self.debe.iter();
+        let mut haber_iter = self.haber.iter();
+
+        loop {
+            let l_element = debe_iter.next();
+            let r_element = haber_iter.next();
+
+            if  l_element == None && r_element == None {
+                break;
+            }
+
+            match l_element {
+                Some(v) => {write!(f, "€ {:<6} {:<31}", v.importe(), v.cuenta())?},
+                None => {write!(f, "{:^40}", "~")?},
+            };
+
+            write!(f, "|")?;
+
+            match r_element {
+                Some(v) => {write!(f, "{:>31}{:>6} € ", v.cuenta(), v.importe())?;},
+                None => {write!(f, "{:^40}", "~")?},
+            };
+
+            write!(f, "\n")?;
+
         }
+
+        write!(f, "{:>41}\n", "|")?;
+
 
         Ok(())
 
     }
 }
 
-impl Asiento {
+impl Asiento<'_> {
 
     /// Crea un nuevo asiento a partir de un concepto
     pub fn new(concepto: &str) -> Asiento {
         Asiento {
             concepto: String::from(concepto),
-            movimientos: vec![],
             fecha: offset::Local::now().date_naive(),
+            debe: vec![],
+            haber: vec![],
         }
     }
 
-    /// Inserta un movimiento en el asiento
-    pub fn insertar_movimiento(&mut self, movimiento: movimiento::Movimiento) {
-        self.movimientos.push(movimiento);
-    }
-
-    /// Devuelve el número de movimientos
-    pub fn n_movimientos(&self) -> usize {
-        self.movimientos.len()
-    }
 
     /// Devuelve la fecha y, si recibe argumentos, la modifica
     pub fn fecha(&mut self, fecha: Option<NaiveDate>) -> NaiveDate {
@@ -55,6 +83,16 @@ impl Asiento {
         };
 
         self.fecha
+    }
+
+    /// Inserta movimientos al debe
+    pub fn insertar_debe(&mut self, movimiento: Movimiento) {
+        self.debe.push(movimiento);
+    }
+
+    /// Inserta movimientos al haber
+    pub fn insertar_haber(&mut self, movimiento: Movimiento) {
+        self.haber.push(movimiento);
     }
 
 
@@ -68,7 +106,12 @@ mod tests {
 
     #[test]
     fn crear_asiento_crea_asiento() {
-        let asiento = Asiento { concepto: String::from("asiento de muestra"), movimientos: vec![], fecha: offset::Local::now().date_naive()};
+        let asiento = Asiento { 
+            concepto: String::from("asiento de muestra"), 
+            debe: vec![], 
+            haber: vec![], 
+            fecha: offset::Local::now().date_naive()
+        };
 
         let asiento_test = Asiento::new("asiento de muestra");
 
