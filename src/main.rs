@@ -1,17 +1,31 @@
 use std::fs::{self};
+use std::str::Split;
 use regex;
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use presupuestos::cuadro_contable::{Cuadro, movimiento::Movimiento};
 
 fn main() {
+
+    let mut args = std::env::args();
+
+    let mut path_diario = "diario".to_string();
+
+    if let Some(v) = args.nth(1) {
+        path_diario = v;
+    }
+
+    
     let mut cuadro = Cuadro::create();
 
+    leer_balance_inicial(&mut cuadro);
+
     cargar_cuadro(&mut cuadro);
-    cargar_diario(&mut cuadro);
+    cargar_diario(&mut cuadro, path_diario);
 
     cuadro.print_libro_diario();
     cuadro.print_libro_mayor();
+
 
 }
 
@@ -41,15 +55,8 @@ fn procesar_cadena(cadena: String, cuadro: &mut Cuadro) {
 }
 
 /// Procesa una carpeta y procesa los posibles archivos de asientos, que deben tener formato <YYYYMMDD.data>
-fn cargar_diario(cuadro: &mut Cuadro) {
+fn cargar_diario(cuadro: &mut Cuadro, path: String) {
 
-    let mut args = std::env::args();
-
-    let mut path = "diario".to_string();
-
-    if let Some(v) = args.nth(1) {
-        path = v;
-    }
     let carpeta = fs::read_dir(path)
         .expect("Imposible listar el directorio diario");
 
@@ -90,7 +97,9 @@ fn validar_archivo(ruta: &fs::DirEntry) -> Option<NaiveDate> {
     respuesta
 }
 
+/// Lee todos los asientos de una ruta dada, y los guarda en el cuadro.
 fn leer_asientos(ruta: &fs::DirEntry, cuadro: &mut Cuadro) {
+
     let mut fecha: Option<NaiveDate> = None;
     let mut codigo: String = String::new();
 
@@ -148,4 +157,68 @@ fn leer_asientos(ruta: &fs::DirEntry, cuadro: &mut Cuadro) {
 
         cuadro.crear_asiento(concepto, fecha, debe, haber, codigo);  
     }
+}
+
+#[derive(Debug, PartialEq)]
+enum Masa {
+    Activo,
+    Pasivo,
+    Patrimonio,
+    Gasto,
+    Ingreso
+}
+
+fn leer_balance_inicial(cuadro: &mut Cuadro) {
+
+    let archivo = fs::read_to_string("balance_inicial.txt").unwrap();
+
+    let mut vec_debe: Vec<Movimiento> = vec![];
+    let mut vec_haber: Vec<Movimiento> = vec![];
+
+    let iterador_archivo: Split<&str> = archivo.as_str().split("\n");
+
+    let mut grupo: Masa = Masa::Activo;
+
+    for linea in iterador_archivo {
+        let modo: Option<Masa> = match linea {
+            "ACTIVO" => Some(Masa::Activo),
+            "ACTIVO CORRIENTE" => Some(Masa::Activo),
+            "ACTIVO NO CORRIENTE" => Some(Masa::Activo),
+            "PASIVO" => Some(Masa::Pasivo),
+            "PASIVO CORRIENTE" => Some(Masa::Pasivo),
+            "PASIVO NO CORRIENTE" => Some(Masa:: Pasivo),
+            "PATRIMONIO NETO" => Some(Masa::Patrimonio),
+            _ => None
+        };
+
+        if let Some(mode) = modo {
+            grupo = mode;
+        } else {
+            let read: Vec<&str> = linea.split_whitespace().take(2).collect();
+
+            if let [codigo_cuenta, importe] = read[..] {
+                let importe_parsed: f64 = importe.parse::<f64>().unwrap();
+
+                let movimiento = Movimiento::new(importe_parsed, codigo_cuenta.to_string());
+
+                match grupo {
+                    Masa::Activo => vec_debe.push(movimiento),
+                    _ => vec_haber.push(movimiento),
+                }
+            }
+        };
+
+    }
+    cuadro.crear_asiento("Asiento de apertura".to_string(), None, vec_debe, vec_haber, generar_codigo(0));
+    cuadro.libro_diario()[0].guardar_asiento("segundo");
+
+}
+
+fn generar_codigo(orden: usize) -> String {
+
+    let hoy = Utc::now().date_naive().format("%Y%m%d");
+
+    let s = format!("{}{}", hoy.to_string(), orden);
+
+    s
 }

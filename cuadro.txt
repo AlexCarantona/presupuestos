@@ -6,3 +6,20 @@
 100 Capital social
 101 Fondo social
 102 Capital
+170 Deudas a largo plazo con entidades de crédito
+
+210 Terrenos y bienes naturales
+211 Construcciones
+216 Mobiliario
+217 Equipos para procesos informáticos
+218 Elementos de transporte
+
+300 Mercaderías
+
+400 Proveedores
+410 Acreedores por prestaciones de servicios
+430 Clientes
+
+520 Deudas a corto plazo con entidades de crédito
+570 Caja
+572 Bancos c/c

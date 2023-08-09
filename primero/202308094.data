@@ -1,0 +1,10 @@
+Venta de mercaderías 3.400€. IVA 21%. Descuento del 2%. Cobro 1sem trans.
+
+DEBE
+430 4031.72
+
+HABER
+700 3332
+477 699.72
+
+///

@@ -35,13 +35,13 @@ impl<'a> Cuadro {
         self.cuentas.push(cuenta);
     }
 
-    /// Crea un asiento con, al menos, un movimiento
+    /// Crea un asiento con, al menos, un movimiento. Si ya existe uno, lo sustituye.
     pub fn crear_asiento(&mut self, concepto: String, fecha: Option<NaiveDate>, debe: Vec<Movimiento>, haber: Vec<Movimiento>, codigo: String) {
         
         // Crea el asiento y deja la referencia modificable.
         let mut asiento = asiento::Asiento::new(concepto);
         asiento.fecha(fecha);
-        asiento.codigo(Some(codigo));
+        asiento.codigo(Some(codigo.clone()));
 
         // Hidrata e inserta los movimientos del debe
         for mut m in debe.into_iter() {
@@ -56,7 +56,11 @@ impl<'a> Cuadro {
         }
 
         // Guarda el asiento
-        self.libro_diario.push(asiento);
+        match self.libro_diario.iter().position(|v| v.get_codigo() == &codigo) {
+            Some(r) => {self.libro_diario.remove(r); self.libro_diario.push(asiento)},
+            None => {self.libro_diario.push(asiento)},
+        };
+        
         
     }
 

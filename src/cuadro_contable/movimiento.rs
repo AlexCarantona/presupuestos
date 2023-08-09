@@ -12,7 +12,6 @@ impl Movimiento {
 
     /// Almacena un movimiento con importe y cuenta.
     pub fn new(importe: f64, codigo_cuenta: String) -> Movimiento {
-
         Movimiento { importe, codigo_cuenta, nombre_cuenta: String::new() }
     }
 
