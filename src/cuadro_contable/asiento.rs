@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use itertools::{Itertools, EitherOrBoth};
 
 use chrono::{NaiveDate, offset};
 
@@ -17,49 +18,39 @@ pub struct Asiento {
 impl Display for Asiento {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
-        write!(f, "+{:-^78}+\n", "-")?;
+        let cod_fmt = format!("N.º {}", self.codigo);
+        let vec_concepto = self.concepto.split('\n');
+        let w = 80;
 
-        write!(f, "|{:^78}|\n", self.concepto)?;
+        write!(f, "+{:-^width$}+\n","", width=w - 2)?;
+        write!(f, "|{:^width$}|\n", cod_fmt, width=w - 2)?;
+        for line in vec_concepto {
+            write!(f, "|{:^width$}|\n", line, width=w - 2)?;
+        }
+        write!(f, "|{:^width$}|\n",&self.fecha.format("%Y-%m-%d"), width=w - 2)?;
+        write!(f, "+{:-^width$}+\n","", width=w - 2)?;
 
-        write!(f, "|{:^78}|\n", &self.fecha.format("%Y-%m-%d"))?;
-
-        write!(f, "+{:-^78}+\n", "-")?;
-
-        write!(f, "{:>43}\n", "|")?;
-
-
-        let mut debe_iter = self.debe.iter();
-        let mut haber_iter = self.haber.iter();
-
-        loop {
-            let l_element = debe_iter.next();
-            let r_element = haber_iter.next();
-
-            if  l_element == None && r_element == None {
-                break;
-            }
-
-            match l_element {
-                Some(v) => {
-                    write!(f, "€ {:<8} {:<31}", v.importe(), v.cuenta())?
-                
-                },
-                None => {write!(f, "{:^42}", "~")?},
-            };
-
+        for par in self.debe.iter().zip_longest(&self.haber) {
             write!(f, "|")?;
-
-            match r_element {
-                Some(v) => {write!(f, "{:>31}{:>8} € ", v.cuenta(), v.importe())?;},
-                None => {write!(f, "{:^42}", "~")?},
-            };
-
-            write!(f, "\n")?;
-
+            match par {
+                EitherOrBoth::Both(izq, der) => {
+                    let izq_fmt = format!("{:10} € {}", izq.importe(), izq.cuenta());
+                    let der_fmt = format!("{} {:10} €", der.cuenta(), der.importe());
+                    write!(f, "{:<width$}||{:>width$}", izq_fmt, der_fmt, width = w /2 -2)?
+                },
+                EitherOrBoth::Left(izq) => {
+                    let izq_fmt = format!("{:10} € {}", izq.importe(), izq.cuenta());
+                    write!(f, "{:<width$}||{:^width$}", izq_fmt, "~", width = w /2 -2)?
+                },
+                EitherOrBoth::Right(der) => {
+                    let der_fmt = format!("{} {:10} €", der.cuenta(), der.importe());
+                    write!(f, "{:^width$}||{:>width$}", "~", der_fmt, width = w /2 -2)?
+                }
+            }
+            write!(f, "|\n")?;
         }
 
-        write!(f, "{:>43}\n", "|")?;
-
+        write!(f, "+{:-^width$}+\n","", width=w - 2)?;
 
         Ok(())
 

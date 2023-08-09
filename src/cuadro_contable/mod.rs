@@ -80,13 +80,13 @@ impl<'a> Cuadro {
     /// Imprime el listado de asientos que existen
     pub fn print_libro_diario(&self) {
 
-        println!("{:#^40} LIBRO DIARIO {:#^40}", "#", "#");
+        println!("{:#^80}", " LIBRO DIARIO ");
 
         let mut asientos_erroneos: Vec<&Asiento> = vec![];
         let mut total_asientos: usize = 0;
 
         for asiento in &self.libro_diario {
-            println!("{}", asiento);
+            println!("{:80}", asiento);
             total_asientos += 1;
             if !asiento.validar() {
                 asientos_erroneos.push(asiento)
@@ -109,7 +109,7 @@ impl<'a> Cuadro {
     /// Mayoriza e imprime las cuentas
     pub fn print_libro_mayor(&mut self) {
 
-        println!("{:#^40} LIBRO MAYOR {:#^40}", "#", "#");
+        println!("{:#^80}", " LIBRO MAYOR ");
 
         for cuenta in self.cuentas.iter_mut() {
             cuenta.mayorizar_cuenta(&self.libro_diario);
