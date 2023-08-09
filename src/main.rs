@@ -42,8 +42,16 @@ fn procesar_cadena(cadena: String, cuadro: &mut Cuadro) {
 
 /// Procesa una carpeta y procesa los posibles archivos de asientos, que deben tener formato <YYYYMMDD.data>
 fn cargar_diario(cuadro: &mut Cuadro) {
-    let carpeta = fs::read_dir("./diario/")
-        .expect("Imposible listar el directorio diario/");
+
+    let mut args = std::env::args();
+
+    let mut path = "diario".to_string();
+
+    if let Some(v) = args.nth(1) {
+        path = v;
+    }
+    let carpeta = fs::read_dir(path)
+        .expect("Imposible listar el directorio diario");
 
     for ruta in carpeta {
         if let Ok(archivo) = ruta {

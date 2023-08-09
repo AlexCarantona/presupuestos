@@ -2,8 +2,6 @@ use std::fmt::Display;
 
 use super::asiento::Asiento;
 
-
-
 #[derive(PartialEq, Debug)]
 pub struct CuentaError;
 

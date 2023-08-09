@@ -20,7 +20,7 @@ impl Display for Asiento {
 
         let cod_fmt = format!("N.º {}", self.codigo);
         let vec_concepto = self.concepto.split('\n');
-        let w = 80;
+        let w = 120;
 
         write!(f, "+{:-^width$}+\n","", width=w - 2)?;
         write!(f, "|{:^width$}|\n", cod_fmt, width=w - 2)?;
