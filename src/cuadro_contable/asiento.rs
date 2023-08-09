@@ -6,14 +6,15 @@ use super::movimiento::Movimiento;
 
 /// Representa un asiento contable.
 #[derive(PartialEq, Debug)]
-pub struct Asiento<'a> {
-    debe: Vec<Movimiento<'a>>,
-    haber: Vec<Movimiento<'a>>,
+pub struct Asiento {
+    debe: Vec<Movimiento>,
+    haber: Vec<Movimiento>,
     concepto: String,
-    fecha: NaiveDate, 
+    fecha: NaiveDate,
+    codigo: String, 
 }
 
-impl Display for Asiento<'_> {
+impl Display for Asiento {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
         write!(f, "+{:-^78}+\n", "-")?;
@@ -24,7 +25,7 @@ impl Display for Asiento<'_> {
 
         write!(f, "+{:-^78}+\n", "-")?;
 
-        write!(f, "{:>41}\n", "|")?;
+        write!(f, "{:>43}\n", "|")?;
 
 
         let mut debe_iter = self.debe.iter();
@@ -39,22 +40,25 @@ impl Display for Asiento<'_> {
             }
 
             match l_element {
-                Some(v) => {write!(f, "€ {:<6} {:<31}", v.importe(), v.cuenta())?},
-                None => {write!(f, "{:^40}", "~")?},
+                Some(v) => {
+                    write!(f, "€ {:<8} {:<31}", v.importe(), v.cuenta())?
+                
+                },
+                None => {write!(f, "{:^42}", "~")?},
             };
 
             write!(f, "|")?;
 
             match r_element {
-                Some(v) => {write!(f, "{:>31}{:>6} € ", v.cuenta(), v.importe())?;},
-                None => {write!(f, "{:^40}", "~")?},
+                Some(v) => {write!(f, "{:>31}{:>8} € ", v.cuenta(), v.importe())?;},
+                None => {write!(f, "{:^42}", "~")?},
             };
 
             write!(f, "\n")?;
 
         }
 
-        write!(f, "{:>41}\n", "|")?;
+        write!(f, "{:>43}\n", "|")?;
 
 
         Ok(())
@@ -62,15 +66,16 @@ impl Display for Asiento<'_> {
     }
 }
 
-impl Asiento<'_> {
+impl<'a> Asiento {
 
     /// Crea un nuevo asiento a partir de un concepto
-    pub fn new(concepto: &str) -> Asiento {
+    pub fn new(concepto: String) -> Asiento {
         Asiento {
-            concepto: String::from(concepto),
+            concepto,
             fecha: offset::Local::now().date_naive(),
             debe: vec![],
             haber: vec![],
+            codigo: String::new(),
         }
     }
 
@@ -85,15 +90,61 @@ impl Asiento<'_> {
         self.fecha
     }
 
-    /// Inserta movimientos al debe
+    /// Devuelve el concepto del asiento
+    pub fn concepto(&self) -> &str {
+        self.concepto.as_str()
+    }
+
+    /// Inserta un movimiento en el debe
     pub fn insertar_debe(&mut self, movimiento: Movimiento) {
         self.debe.push(movimiento);
     }
 
-    /// Inserta movimientos al haber
+    /// Inserta un movimiento en el haber
     pub fn insertar_haber(&mut self, movimiento: Movimiento) {
         self.haber.push(movimiento);
     }
+
+    /// Devuelve una referencia a los movimientos del debe
+    pub fn debe(&self) -> &Vec<Movimiento> {
+        &self.debe
+    } 
+    
+    /// Devuelve una referencia a los movimientos del haber
+    pub fn haber(&self) -> &Vec<Movimiento> {
+        &self.haber
+    }
+
+    /// Modifica y devuelve el código
+    pub fn codigo(&mut self, codigo: Option<String>) -> &str {
+
+        if let Some(c) = codigo {
+            self.codigo = c;
+        }
+
+        self.codigo.as_str()
+    }
+
+    // Devuelve el código
+    pub fn get_codigo(&self) -> &str {
+        self.codigo.as_str()
+    }
+
+    /// Valida el asiento: las anotaciones del debe han de sumar lo mismo que las del haber
+    pub fn validar(&self) -> bool {
+        let debe_reducido: Option<f64> = self.debe
+            .iter()
+            .map(|element| (element.importe() * 100.00).round())
+            .reduce(|a, b| a + b);
+        let haber_reducido: Option<f64> = self.haber
+            .iter()
+            .map(|element| (element.importe() * 100.00).round())
+            .reduce(|a, b| a + b);
+
+
+        debe_reducido == haber_reducido
+    }
+
 
 
 }
@@ -110,17 +161,18 @@ mod tests {
             concepto: String::from("asiento de muestra"), 
             debe: vec![], 
             haber: vec![], 
-            fecha: offset::Local::now().date_naive()
+            fecha: offset::Local::now().date_naive(),
+            codigo: String::new(),
         };
 
-        let asiento_test = Asiento::new("asiento de muestra");
+        let asiento_test = Asiento::new(String::from("asiento de muestra"));
 
         assert_eq!(asiento, asiento_test);
     }
 
     #[test]
     fn fecha_modifica_y_devuelve_la_fecha() {
-        let mut asiento = Asiento::new("concepto");
+        let mut asiento = Asiento::new(String::from("concepto"));
 
         asiento.fecha(NaiveDate::from_ymd_opt(2023, 1, 1));
 

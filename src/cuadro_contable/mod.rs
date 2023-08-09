@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use chrono::NaiveDate;
 
+use crate::cuadro_contable::asiento::Asiento;
+
 use self::movimiento::Movimiento;
 
 mod cuenta;
@@ -11,84 +13,57 @@ mod asiento;
 /// Este struct almacena las cuentas que se usarán.
 /// Su misión principal es realizar y centralizar las operaciones
 #[derive(Debug, PartialEq)]
-pub struct Cuadro<'a> {
+pub struct Cuadro {
     /// Almacena las cuentas
     cuentas: Vec<cuenta::Cuenta>,
     /// Almacena los asientos
-    asientos: Vec<asiento::Asiento<'a>>
+    libro_diario: Vec<asiento::Asiento>
 
 }
 
 
-impl Cuadro<'_> {
+impl<'a> Cuadro {
 
     /// Crea un nuevo cuadro de cuentas
-    pub fn create() -> Cuadro<'static> {
-        Cuadro { cuentas: vec![], asientos: vec![] }
+    pub fn create() -> Cuadro {
+        Cuadro { cuentas: vec![], libro_diario: vec![] }
     }
 
-    /// Envuelve la creación de una cuenta::Cuenta
-    fn crear_cuenta(&mut self, nombre_cuenta: &str, masa_cuenta: cuenta::Masa) {
-        let cuenta = cuenta::Cuenta::new(nombre_cuenta, masa_cuenta);
+    /// Envuelve la creación de una cuenta
+    pub fn crear_cuenta(&mut self, nombre_cuenta: &str, codigo_cuenta: &str) {
+        let cuenta = cuenta::Cuenta::new(nombre_cuenta, codigo_cuenta);
         self.cuentas.push(cuenta);
     }
 
-    /// Crea una cuenta de gastos
-    pub fn crear_cuenta_gasto(&mut self, nombre_cuenta: &str) {
-        self.crear_cuenta(nombre_cuenta, cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
-    }
-
-    /// Crea una cuenta de activo corriente
-    pub fn crear_cuenta_activo_corriente(&mut self, nombre_cuenta: &str) {
-        self.crear_cuenta(nombre_cuenta, cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
-    }
-
-
     /// Crea un asiento con, al menos, un movimiento
-    pub fn crear_asiento(&mut self, concepto: &str, fecha: Option<NaiveDate>, debe: Vec<Movimiento>, haber: Vec<Movimiento>) {
+    pub fn crear_asiento(&mut self, concepto: String, fecha: Option<NaiveDate>, debe: Vec<Movimiento>, haber: Vec<Movimiento>, codigo: String) {
         
         // Crea el asiento y deja la referencia modificable.
-        let mut asiento = asiento::Asiento {
-                concepto: String::from(concepto),
-                debe: vec![],
-                haber: vec![],
-            };
+        let mut asiento = asiento::Asiento::new(concepto);
         asiento.fecha(fecha);
+        asiento.codigo(Some(codigo));
 
-        // Inserta los movimientos del debe
-        for m in debe.into_iter() {
+        // Hidrata e inserta los movimientos del debe
+        for mut m in debe.into_iter() {
+            m.hidratar_cuenta(&self);
             asiento.insertar_debe(m)
         }
 
         // Inserta los movimientos del haber
-        for  m in haber.into_iter() {
+        for mut m in haber.into_iter() {
+            m.hidratar_cuenta(&self);
             asiento.insertar_haber(m)
         }
 
         // Guarda el asiento
-        self.asientos.push(asiento);
+        self.libro_diario.push(asiento);
         
     }
 
-    /// Valida que una cuenta existe en el cuadro si se le pasa su nombre
-    pub fn validar_cuenta(&self, nombre_cuenta: &str) -> bool {
-        self.cuentas.iter().any(|c| c.nombre() == String::from(nombre_cuenta))
-    }
-
-    /// Encuentra una cuenta y devuelve su referencia mutable si la encuentra
-    fn cuenta(&mut self, nombre_cuenta: &str) -> Option<&mut cuenta::Cuenta> {
-        for id in 0..self.cuentas.len() {
-            if String::from(nombre_cuenta) == self.cuentas[id].nombre() {
-                return Some(&mut self.cuentas[id])
-            }
-        };
-        None
-    }
-
     /// Encuentra una cuenta y devuelve su referencia inmutable si la encuentra
-    pub fn cuenta_pub(&self, nombre_cuenta: &str) -> Option<&cuenta::Cuenta> {
+    pub fn find_cuenta(&self, codigo_cuenta: &str) -> Option<&cuenta::Cuenta> {
         for id in 0..self.cuentas.len() {
-            if String::from(nombre_cuenta) == self.cuentas[id].nombre() {
+            if String::from(codigo_cuenta) == self.cuentas[id].codigo() {
                 return Some(&self.cuentas[id])
             }
         };
@@ -96,18 +71,59 @@ impl Cuadro<'_> {
         None
     }
 
-    pub fn asientos(&self) -> &Vec<asiento::Asiento> {
+    /// Devuelve una lista de los asientos que existen
+    pub fn libro_diario(&self) -> &Vec<asiento::Asiento> {
 
-        &self.asientos
+        &self.libro_diario
     }
 
-   
+    /// Imprime el listado de asientos que existen
+    pub fn print_libro_diario(&self) {
+
+        println!("{:#^40} LIBRO DIARIO {:#^40}", "#", "#");
+
+        let mut asientos_erroneos: Vec<&Asiento> = vec![];
+        let mut total_asientos: usize = 0;
+
+        for asiento in &self.libro_diario {
+            println!("{}", asiento);
+            total_asientos += 1;
+            if !asiento.validar() {
+                asientos_erroneos.push(asiento)
+            }
+        }
+
+        println!("Total asientos: {}", total_asientos);
+        
+        if asientos_erroneos.len() > 0 {
+            println!("Hay asientos en los que no coinciden las anotaciones del debe y del haber:");
+            for asiento_erroneo in asientos_erroneos {
+                println!("{}", asiento_erroneo.get_codigo());
+            }
+        } else { println!("No hay errores")}
+
+        println!("\n");
+        
+    }
+
+    /// Mayoriza e imprime las cuentas
+    pub fn print_libro_mayor(&mut self) {
+
+        println!("{:#^40} LIBRO MAYOR {:#^40}", "#", "#");
+
+        for cuenta in self.cuentas.iter_mut() {
+            cuenta.mayorizar_cuenta(&self.libro_diario);
+            println!("{}", cuenta);
+        }
+
+    }
+
 }
 
-impl Display for Cuadro<'_> {
+impl Display for Cuadro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for cuenta in &self.cuentas {
-            println!("{}", cuenta)
+            write!(f, "{}\n", cuenta)?;
         };
         Ok(())
     }
@@ -118,47 +134,14 @@ mod tests {
 
     use super::*;
 
-    fn setupcuadro() -> Cuadro<'static> {
-        let mut cuadro = Cuadro::create();
-
-        cuadro.crear_cuenta("Capital", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
-        cuadro.crear_cuenta("Bancos", cuenta::Masa::Activo(cuenta::Activos::ActivoCorriente));
-        cuadro.crear_cuenta("Alimerka", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Gastos));
-        cuadro
-
-    }
-
     #[test]
     fn crear_cuenta_crea_e_inserta_una_cuenta() {
         let mut cuadro = Cuadro::create();
 
-        cuadro.crear_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
+        cuadro.crear_cuenta("Activo corriente", "100");
 
         assert_eq!(cuadro.cuentas.len(), 1);
-        assert_eq!(cuadro.cuentas[0].saldo(), 0.00);
-        assert_eq!(cuadro.cuentas[0].nombre(), "cuenta::Cuenta 1");
+        assert_eq!(cuadro.cuentas[0].nombre(), "Activo corriente");
     }
-
-    #[test]
-    fn validar_cuenta_devuelve_true_nombre_cuenta() {
-        let mut cuadro = Cuadro::create();
-
-        cuadro.crear_cuenta("cuenta::Cuenta 1", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
-
-        assert!(cuadro.validar_cuenta("cuenta::Cuenta 1"));
-        assert!(!cuadro.validar_cuenta("cuenta::Cuenta 2"));
-    }
-
-    #[test]
-    fn cuenta_devuelve_referencia_mutable_a_cuenta() {
-        let mut cuadro = Cuadro::create();
-
-        cuadro.crear_cuenta("cuenta::Cuenta test", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital));
-
-        assert_eq!(cuadro.cuenta("cuenta::Cuenta test"), Some(&mut cuenta::Cuenta::new("cuenta::Cuenta test", cuenta::Masa::Patrimonio(cuenta::Patrimonios::Capital))));
-        assert_eq!(cuadro.cuenta("Ninguna"), None);
-
-    }
-
 
 }

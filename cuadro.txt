@@ -1,0 +1,8 @@
+## Esto es un comentario
+## que en nada debería afectar al programa
+
+1 Financiación básica
+10 Capital
+100 Capital social
+101 Fondo social
+102 Capital
