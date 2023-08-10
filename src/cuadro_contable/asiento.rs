@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::fs;
 use itertools::{Itertools, EitherOrBoth};
 
 use chrono::{NaiveDate, offset};
@@ -70,7 +71,6 @@ impl<'a> Asiento {
         }
     }
 
-
     /// Devuelve la fecha y, si recibe argumentos, la modifica
     pub fn fecha(&mut self, fecha: Option<NaiveDate>) -> NaiveDate {
 
@@ -136,6 +136,26 @@ impl<'a> Asiento {
         debe_reducido == haber_reducido
     }
 
+    /// Guarda el asiento en un archivo
+    pub fn guardar_asiento(&self, path: &str) {
+
+        let mut debe_fmt = String::new();
+
+        for d in self.debe.iter() {
+            debe_fmt += format!("{} {}\n", d.codigo_cuenta(), d.importe()).as_str()
+        }
+
+        let mut haber_fmt = String::new();
+
+        for d in self.haber.iter() {
+            haber_fmt += format!("{} {}\n", d.codigo_cuenta(), d.importe()).as_str()
+        }
+
+        let contenido = format!("{}\n\nDEBE\n{}\nHABER\n{}\n///", self.concepto, debe_fmt, haber_fmt);
+
+        fs::write(format!("{}/{}.data", path, self.codigo), contenido).unwrap();
+
+    }
 
 
 }
