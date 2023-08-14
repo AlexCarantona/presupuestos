@@ -167,7 +167,7 @@ mod tests {
     use  super::*;
 
     #[test]
-    fn crear_asiento_crea_asiento() {
+    fn new_crea_asiento() {
         let asiento = Asiento { 
             concepto: String::from("asiento de muestra"), 
             debe: vec![], 
