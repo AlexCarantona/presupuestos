@@ -25,43 +25,26 @@ impl Display for Cuenta {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         
-        if self.debe.len() > 0 || self.haber.len() > 0 {
-            write!(f, "({}) {} ~ {:.2} €\n", self.codigo, self.nombre, self.saldo)?;
-            write!(f, "\n")?;
+        
+        if let Some(w) = f.width() { // Si se le pasa ancho, rellena la fila completa
 
-            let mut debe_iter = self.debe.iter();
-            let mut haber_iter = self.haber.iter();
+            // Cadena de saldo
+            let saldo_str = format!("{:.2} €", self.saldo);
 
-            loop {
-                let l_element = debe_iter.next();
-                let r_element = haber_iter.next();
+            // Cadena de código y nombre
+            let codigo_nombre_str = format!("({}) {}", self.codigo, self.nombre);
 
-                if  l_element == None && r_element == None {
-                    break;
-                }
-
-                match l_element {
-                    Some(v) => {
-                        write!(f, "\t€ {:<10}", v)?;
-                    
-                    },
-                    None => {write!(f, "\t{:^12}", "~")?},
-                };
-
-                write!(f, "|")?;
-
-                match r_element {
-                    Some(v) => {write!(f, "{:>10} € ", v)?;},
-                    None => {write!(f, "{:^12}", "~")?},
-                };
-
-                write!(f, "\n")?;
-
+            // Si el ancho es suficiente, deja espacio a los puntos intermedios
+            if w >= codigo_nombre_str.len() + 1 {
+                write!(f,"{}{:.>width$}", codigo_nombre_str, saldo_str, width=w - codigo_nombre_str.len())?;
+            } else { // En caso contrario, imprime con espacio
+                write!(f, "{} {}", codigo_nombre_str, saldo_str)?;
             }
-        } else {
-            write!(f, "({}) {}", self.codigo, self.nombre)?;
-        }
 
+        } else {
+            // Formato estándar
+            write!(f, "({}) {} ~ {:.2} €", self.codigo, self.nombre, self.saldo)?;
+        }
 
         Ok(())
     }
@@ -126,3 +109,88 @@ impl Cuenta {
 
 }
 
+#[cfg(test)]
+mod cuenta_tests {
+
+    use super::*;
+
+    fn setup_cuenta() -> Cuenta {
+        Cuenta {
+            nombre: "test".to_string(),
+            codigo: "0000".to_string(),
+            debe: vec![],
+            haber: vec![],
+            saldo: 0.00,
+        }
+    }
+
+    #[test]
+    fn new_crea_nueva_cuenta() {
+        let cuenta = Cuenta::new("Cuenta 1", "101");
+
+        assert_eq!(cuenta, Cuenta {
+            nombre: "Cuenta 1".to_string(),
+            codigo: "101".to_string(),
+            debe: vec![],
+            haber: vec![],
+            saldo: 0.00,
+        })
+    }
+
+    #[test]
+    fn incrementar_saldo() {
+        let mut cuenta = setup_cuenta();
+
+        cuenta.incrementar_saldo(20.05);
+
+        assert_eq!(cuenta.saldo, 20.05);
+    }
+
+    #[test]
+    fn reducir_saldo() {
+        let mut cuenta = setup_cuenta();
+
+        cuenta.reducir_saldo(20.05);
+        assert_eq!(cuenta.saldo, -20.05);
+    }
+
+    #[test]
+    fn nombre_clona_nombre_cuenta() {
+        let cuenta = setup_cuenta();
+
+        assert_eq!(cuenta.nombre(), "test".to_string());
+    }
+
+    #[test]
+    fn codigo_clona_codigo_cuenta() {
+        let cuenta = setup_cuenta();
+
+        assert_eq!(cuenta.codigo(), "0000".to_string());
+    }
+
+    #[test]
+    fn display_muestra_codigo_nombre_y_saldo() {
+
+        let cuenta = setup_cuenta();
+
+        assert_eq!(cuenta.to_string(), "(0000) test ~ 0.00 €");
+    }
+
+    #[test]
+    fn display_con_ancho_ocupa_todo_el_ancho() {
+
+        let cuenta = setup_cuenta();
+
+        assert_eq!(format!("{:width$}", cuenta, width=20), "(0000) test...0.00 €");
+
+    }
+
+    #[test]
+    fn display_con_ancho_pero_sin_ancho_sufciente_imprime_estandar() {
+
+        let cuenta = setup_cuenta();
+
+        assert_eq!(format!("{:width$}", cuenta, width=10), "(0000) test 0.00 €");
+
+    }
+}
