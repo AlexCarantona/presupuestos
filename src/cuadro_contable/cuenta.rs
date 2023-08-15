@@ -9,15 +9,15 @@ pub struct CuentaError;
 #[derive(PartialEq, Debug)]
 pub struct Cuenta {
     /// El nombre de la cuenta, que debe ser único.
-    pub nombre: String,
+    nombre: String,
     /// El código de la cuenta, que debe ser único e informa también del grupo al que pertence.
-    pub codigo: String,
+    codigo: String,
     /// Los importes del debe
-    pub debe: Vec<f64>,
+    debe: Vec<f64>,
     /// Los importes del haber
-    pub haber: Vec<f64>,
+    haber: Vec<f64>,
     /// El saldo de la cuenta
-    pub saldo: f64,
+    saldo: f64,
 
 }
 

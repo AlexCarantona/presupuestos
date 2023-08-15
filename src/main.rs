@@ -16,7 +16,7 @@ fn main() {
     }
 
     
-    let mut cuadro = Cuadro::create();
+    let mut cuadro = Cuadro::new();
 
     leer_balance_inicial(&mut cuadro);
 
