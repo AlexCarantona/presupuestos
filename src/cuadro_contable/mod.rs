@@ -25,17 +25,16 @@ pub struct Cuadro {
 /// Manejo de posibles errores de cuadro
 #[derive(Debug, PartialEq)]
 pub enum CuadroError {
-    CuadroFilled
+    CuadroNoVacio,
+    CuentaDuplicada(String),
 }
 
-/// Error porque el cuadro ya contiene información
-#[derive(Debug)]
-struct CuadroFilled;
 
 impl Display for CuadroError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            CuadroError::CuadroFilled => write!(f, "el cuadro ya contiene cuentas. Puedes añadir de una en una, pero no cargar el PGC"),
+        match &*self {
+            CuadroError::CuadroNoVacio => write!(f, "El cuadro ya contiene cuentas. Puedes añadir de una en una, pero no cargar el PGC"),
+            CuadroError::CuentaDuplicada(cuenta_s) => write!(f, "La cuenta '{}' ya existe", cuenta_s)
         }
     }
 }
@@ -52,10 +51,10 @@ impl<'a> Cuadro {
 
         if self.cuentas.len() == 0 {
             for (nombre_cuenta, codigo_cuenta) in CUENTAS_PGC {
-                self.crear_cuenta(nombre_cuenta, codigo_cuenta);
+                self.crear_cuenta(nombre_cuenta, codigo_cuenta)?;
             };
         } else { 
-            return Err(CuadroError::CuadroFilled)
+            return Err(CuadroError::CuadroNoVacio)
         }
         Ok(())
     }
@@ -70,10 +69,19 @@ impl<'a> Cuadro {
         None
     }
 
-    /// Crea una cuenta y la inserta en el cuadro
-    pub fn crear_cuenta(&mut self, nombre_cuenta: &str, codigo_cuenta: &str) {
-        let cuenta = cuenta::Cuenta::new(nombre_cuenta, codigo_cuenta);
-        self.cuentas.push(cuenta);
+    /// Crea una cuenta y la inserta en el cuadro, si no existe ya
+    pub fn crear_cuenta(&mut self, nombre_cuenta: &str, codigo_cuenta: &str) -> Result<(), CuadroError> {
+
+        match self.find_cuenta(codigo_cuenta) {
+            Some(c) => {
+                Err(CuadroError::CuentaDuplicada(format!("{} ~ {}", c.codigo(), c.nombre())))
+            },
+            None => {
+                let cuenta = cuenta::Cuenta::new(nombre_cuenta, codigo_cuenta);
+                self.cuentas.push(cuenta);
+                Ok(())
+            }
+        }
     }
 
     /// Crea un asiento con, al menos, un movimiento. Si ya existe uno, lo sustituye.
@@ -192,7 +200,7 @@ mod cuadro_tests {
         let cuenta = cuenta::Cuenta::new("test", "0000");
         cuadro.cuentas.push(cuenta);
 
-        assert_eq!(cuadro.cargar_pgc(), Err(CuadroError::CuadroFilled));
+        assert_eq!(cuadro.cargar_pgc(), Err(CuadroError::CuadroNoVacio));
     }
 
     #[test]
@@ -209,6 +217,25 @@ mod cuadro_tests {
                 true
             }
             None => {false}
+        })
+    }
+
+    #[test]
+    fn crear_cuenta_falla_si_ya_existe() {
+
+        let mut cuadro = Cuadro::new();
+        let cuenta = cuenta::Cuenta::new("test", "0000");
+        cuadro.cuentas.push(cuenta);
+
+        let r = cuadro.crear_cuenta("Nueva cuenta", "0000");
+        assert!(r.is_err());
+
+        assert!(match r {
+            Ok(()) => false,
+            Err(e) => {
+                assert_eq!(e.to_string(), "La cuenta '0000 ~ test' ya existe");
+                true
+            }
         })
     }
 }

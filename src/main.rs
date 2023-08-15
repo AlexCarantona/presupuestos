@@ -50,7 +50,7 @@ fn procesar_cadena(cadena: String, cuadro: &mut Cuadro) {
     let capturas = re_codigo.captures_iter(cadena);
 
     for c in capturas {
-        cuadro.crear_cuenta(&c["nombre"], &c["codigo"])
+        cuadro.crear_cuenta(&c["nombre"], &c["codigo"]).unwrap()
     }
 }
 
