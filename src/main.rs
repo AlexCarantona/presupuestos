@@ -3,10 +3,10 @@ use std::str::Split;
 use regex;
 
 use chrono::{NaiveDate, Utc};
-use presupuestos::cuadro_contable::{Cuadro, movimiento::Movimiento};
+use presupuestos::cuadro_contable::Cuadro;
 
 fn main() {
-
+/*
     let mut args = std::env::args();
 
     let mut path_diario = "diario".to_string();
@@ -59,7 +59,7 @@ fn cargar_diario(cuadro: &mut Cuadro, path: String) {
 
     let carpeta = fs::read_dir(path)
         .expect("Imposible listar el directorio diario");
-
+/*
     for ruta in carpeta {
         if let Ok(archivo) = ruta {
             let validado = validar_archivo(&archivo);
@@ -68,9 +68,9 @@ fn cargar_diario(cuadro: &mut Cuadro, path: String) {
                     leer_asientos(&archivo, cuadro);
                 }
         }
-    }
+    }*/
 }
-
+/*
 /// Valida que la ruta y archivo son correctos. Devuelve una fecha si lo ha leído bien.
 fn validar_archivo(ruta: &fs::DirEntry) -> Option<NaiveDate> {
 
@@ -96,7 +96,7 @@ fn validar_archivo(ruta: &fs::DirEntry) -> Option<NaiveDate> {
     }
     respuesta
 }
-
+/*
 /// Lee todos los asientos de una ruta dada, y los guarda en el cuadro.
 fn leer_asientos(ruta: &fs::DirEntry, cuadro: &mut Cuadro) {
 
@@ -121,7 +121,7 @@ fn leer_asientos(ruta: &fs::DirEntry, cuadro: &mut Cuadro) {
 
         // Concepto del asiento
         let concepto = cap["concepto"].to_string();
-        
+        /*
         // Movimientos del debe
         let debe: Vec<Movimiento> = cap["debe"]
             .split('\n')
@@ -154,10 +154,11 @@ fn leer_asientos(ruta: &fs::DirEntry, cuadro: &mut Cuadro) {
             Movimiento::new(importe, codigo_cuenta)
         })
         .collect();  
+     */
 
-        cuadro.crear_asiento(concepto, fecha, debe, haber, codigo);  
+        cuadro.crear_asiento(concepto, fecha, debe, haber, codigo);  */
     }
-}
+}*/
 
 #[derive(Debug, PartialEq)]
 enum Masa {
@@ -171,7 +172,7 @@ enum Masa {
 fn leer_balance_inicial(cuadro: &mut Cuadro) {
 
     let archivo = fs::read_to_string("balance_inicial.txt").unwrap();
-
+/*/
     let mut vec_debe: Vec<Movimiento> = vec![];
     let mut vec_haber: Vec<Movimiento> = vec![];
 
@@ -214,6 +215,8 @@ fn leer_balance_inicial(cuadro: &mut Cuadro) {
 
 }
 
+ */
+
 fn generar_codigo(orden: usize) -> String {
 
     let hoy = Utc::now().date_naive().format("%Y%m%d");
@@ -221,4 +224,7 @@ fn generar_codigo(orden: usize) -> String {
     let s = format!("{}{}", hoy.to_string(), orden);
 
     s
+}
+ */
+
 }
