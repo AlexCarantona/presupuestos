@@ -1,6 +1,5 @@
 use std::fmt::Display;
-
-use super::asiento::Asiento;
+use super::masa::Masa;
 
 #[derive(PartialEq, Debug)]
 pub struct CuentaError;
@@ -19,7 +18,9 @@ pub struct Cuenta {
     /// El saldo deudor
     saldo_deudor: f64,
     /// El saldo acreedor
-    saldo_acreedor: f64
+    saldo_acreedor: f64,
+    /// Masa
+    masa: Masa
 
 }
 
@@ -54,15 +55,15 @@ impl Display for Cuenta {
 
 impl Cuenta {
     /// Crea una nueva cuenta con saldo cero.
-    pub fn new(nombre: &str, codigo: &str) -> Cuenta {
+    pub fn new(nombre: &str, codigo: &str, masa: Masa) -> Cuenta {
         Cuenta {
             nombre: String::from(nombre),
             codigo: String::from(codigo),
             debe: vec![],
             haber: vec![],
             saldo_deudor: 0.00,
-            saldo_acreedor: 0.00
-
+            saldo_acreedor: 0.00,
+            masa,
         }
     }
 
@@ -106,12 +107,13 @@ mod cuenta_tests {
             haber: vec![],
             saldo_deudor: 0.00,
             saldo_acreedor: 0.00,
+            masa: Masa::ActivoCorriente,
         }
     }
 
     #[test]
     fn new_crea_nueva_cuenta() {
-        let cuenta = Cuenta::new("Cuenta 1", "101");
+        let cuenta = Cuenta::new("Cuenta 1", "101", Masa::ActivoCorriente);
 
         assert_eq!(cuenta, Cuenta {
             nombre: "Cuenta 1".to_string(),
@@ -120,6 +122,7 @@ mod cuenta_tests {
             haber: vec![],
             saldo_deudor: 0.00,
             saldo_acreedor: 0.00,
+            masa: Masa::ActivoCorriente
         })
     }
 

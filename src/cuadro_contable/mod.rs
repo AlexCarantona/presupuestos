@@ -6,6 +6,7 @@ mod cuenta;
 mod movimiento;
 mod asiento;
 mod cuentas_pgc;
+mod masa;
 
 /// Este struct almacena las cuentas,
 /// y ejecuta las operaciones superficiales relacionadas con ellas
@@ -45,7 +46,10 @@ impl Cuadro {
 
         if self.cuentas.len() == 0 {
             for (nombre_cuenta, codigo_cuenta) in cuentas_pgc::CUENTAS_PGC {
-                self.crear_cuenta(nombre_cuenta, codigo_cuenta)?;
+                let masa = masa::interpretar_codigo(codigo_cuenta);
+                if let Some(m) = masa {
+                    self.crear_cuenta(nombre_cuenta, codigo_cuenta, m)?;
+                }
             };
         } else { 
             return Err(CuadroError::CuadroNoVacio)
@@ -64,14 +68,14 @@ impl Cuadro {
     }
 
     /// Crea una cuenta y la inserta en el cuadro, si no existe ya
-    pub fn crear_cuenta(&mut self, nombre_cuenta: &str, codigo_cuenta: &str) -> Result<(), CuadroError> {
+    pub fn crear_cuenta(&mut self, nombre_cuenta: &str, codigo_cuenta: &str, masa: masa::Masa) -> Result<(), CuadroError> {
 
         match self.buscar_cuenta(codigo_cuenta) {
             Some(c) => {
                 Err(CuadroError::CuentaDuplicada(format!("{} ~ {}", c.codigo(), c.nombre())))
             },
             None => {
-                let cuenta = cuenta::Cuenta::new(nombre_cuenta, codigo_cuenta);
+                let cuenta = cuenta::Cuenta::new(nombre_cuenta, codigo_cuenta, masa);
                 self.cuentas.push(cuenta);
                 Ok(())
             }
@@ -115,7 +119,7 @@ mod cuadro_tests {
     #[test]
     fn cargar_pgc_falla_si_ya_hay_cuentas() {
         let mut cuadro = Cuadro::new();
-        let cuenta = cuenta::Cuenta::new("test", "0000");
+        let cuenta = cuenta::Cuenta::new("test", "0000", masa::Masa::ActivoCorriente);
         cuadro.cuentas.push(cuenta);
 
         assert_eq!(cuadro.cargar_pgc(), Err(CuadroError::CuadroNoVacio));
@@ -124,7 +128,7 @@ mod cuadro_tests {
     #[test]
     fn buscar_cuenta_encuentra_una_cuenta_por_codigo() {
         let mut cuadro = Cuadro::new();
-        let cuenta = cuenta::Cuenta::new("test", "0000");
+        let cuenta = cuenta::Cuenta::new("test", "0000", masa::Masa::ActivoCorriente);
         cuadro.cuentas.push(cuenta);
 
         assert_eq!(cuadro.buscar_cuenta("0001"), None);
@@ -141,10 +145,10 @@ mod cuadro_tests {
     #[test]
     fn crear_cuenta_falla_si_ya_existe() {
         let mut cuadro = Cuadro::new();
-        let cuenta = cuenta::Cuenta::new("test", "0000");
+        let cuenta = cuenta::Cuenta::new("test", "0000", masa::Masa::ActivoCorriente);
         cuadro.cuentas.push(cuenta);
 
-        let r = cuadro.crear_cuenta("Nueva cuenta", "0000");
+        let r = cuadro.crear_cuenta("Nueva cuenta", "0000", masa::Masa::ActivoCorriente);
 
         assert!(r.is_err());
         assert!(match r {
@@ -235,9 +239,9 @@ mod libro_diario_tests {
     fn setup_cuadro() -> Cuadro {
         let mut cuadro = Cuadro::new();
 
-        cuadro.crear_cuenta("test", "0000").unwrap();
-        cuadro.crear_cuenta("test1", "0001").unwrap();
-        cuadro.crear_cuenta("test2", "0002").unwrap();
+        cuadro.crear_cuenta("test", "0000", masa::Masa::ActivoCorriente).unwrap();
+        cuadro.crear_cuenta("test1", "0001", masa::Masa::Patrimonio).unwrap();
+        cuadro.crear_cuenta("test2", "0002", masa::Masa::PasivoCorriente).unwrap();
 
         cuadro
     }

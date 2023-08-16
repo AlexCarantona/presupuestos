@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use super::cuenta;
+use super::masa;
 
 /// Representa un movimiento.
 /// Este almacena solo el código de cuenta, puesto que no es probable que las cuentas cambien como tales
@@ -44,7 +45,7 @@ mod movimiento_tests {
 
     #[test]
     fn new_crea_movimiento() {
-        let mut cuenta = cuenta::Cuenta::new("test", "0000");
+        let mut cuenta = cuenta::Cuenta::new("test", "0000", masa::Masa::ActivoCorriente);
         let movimiento = Movimiento::new(23.07, &mut cuenta);
 
         assert_eq!(movimiento, Movimiento { 

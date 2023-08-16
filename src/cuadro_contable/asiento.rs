@@ -49,10 +49,10 @@ impl Asiento {
             .unwrap();
     
         let saldo_haber = haber
-        .iter()
-        .map(|x| x.importe())
-        .reduce(|a, b| a + b)
-        .unwrap();
+            .iter()
+            .map(|x| x.importe())
+            .reduce(|a, b| a + b)
+            .unwrap();
         
         Asiento {
             concepto: concepto.to_string(),
