@@ -16,8 +16,10 @@ pub struct Cuenta {
     debe: Vec<f64>,
     /// Los importes del haber
     haber: Vec<f64>,
-    /// El saldo de la cuenta
-    saldo: f64,
+    /// El saldo deudor
+    saldo_deudor: f64,
+    /// El saldo acreedor
+    saldo_acreedor: f64
 
 }
 
@@ -29,7 +31,7 @@ impl Display for Cuenta {
         if let Some(w) = f.width() { // Si se le pasa ancho, rellena la fila completa
 
             // Cadena de saldo
-            let saldo_str = format!("{:.2} €", self.saldo);
+            let saldo_str = format!("{:.2} €", self.saldo_deudor - self.saldo_acreedor);
 
             // Cadena de código y nombre
             let codigo_nombre_str = format!("({}) {}", self.codigo, self.nombre);
@@ -43,7 +45,7 @@ impl Display for Cuenta {
 
         } else {
             // Formato estándar
-            write!(f, "({}) {} ~ {:.2} €", self.codigo, self.nombre, self.saldo)?;
+            write!(f, "({}) {} ~ {:.2} €", self.codigo, self.nombre, self.saldo_deudor - self.saldo_acreedor)?;
         }
 
         Ok(())
@@ -58,18 +60,20 @@ impl Cuenta {
             codigo: String::from(codigo),
             debe: vec![],
             haber: vec![],
-            saldo: 0.00
+            saldo_deudor: 0.00,
+            saldo_acreedor: 0.00
+
         }
     }
 
-    /// Incrementa el saldo
-    pub fn incrementar_saldo(&mut self, importe: f64) {
-        self.saldo += importe;
+    /// Incrementa el saldo por el debe (carga la cuenta)
+    pub fn saldo_deudor(&mut self, importe: f64) {
+        self.saldo_deudor += importe;
     } 
 
     /// Reduce el saldo
-    pub fn reducir_saldo(&mut self, importe: f64) {
-        self.saldo -= importe;
+    pub fn saldo_acreedor(&mut self, importe: f64) {
+        self.saldo_acreedor += importe;
     } 
 
     /// Devuelve el nombre de la cuenta
@@ -82,29 +86,9 @@ impl Cuenta {
         self.codigo.clone()
     }
 
-    /// Tomando un libro diario como argumento, completa sus campos restantes: debe, haber y saldo
-    pub fn mayorizar_cuenta(&mut self, libro_diario: &Vec<Asiento>) {
-
-        // Resetea los campos que va a modificar
-        self.debe = vec![];
-        self.haber = vec![];
-        self.saldo = 0.00;
-
-        // Repasa los asientos y mayoriza
-        for asiento in libro_diario {
-            for m in asiento.debe() {
-                if self.codigo == m.codigo_cuenta() {
-                    self.debe.push(m.importe());
-                    self.incrementar_saldo(m.importe());
-                }
-            };
-            for m in asiento.haber() {
-                if self.codigo == m.codigo_cuenta() {
-                    self.haber.push(m.importe());
-                    self.reducir_saldo(m.importe());
-                }
-            };
-        }
+    /// Devuelve el saldo de la cuenta
+    pub fn saldo(&self) -> f64 {
+        self.saldo_deudor - self.saldo_acreedor
     }
 
 }
@@ -120,7 +104,8 @@ mod cuenta_tests {
             codigo: "0000".to_string(),
             debe: vec![],
             haber: vec![],
-            saldo: 0.00,
+            saldo_deudor: 0.00,
+            saldo_acreedor: 0.00,
         }
     }
 
@@ -133,25 +118,26 @@ mod cuenta_tests {
             codigo: "101".to_string(),
             debe: vec![],
             haber: vec![],
-            saldo: 0.00,
+            saldo_deudor: 0.00,
+            saldo_acreedor: 0.00,
         })
     }
 
     #[test]
-    fn incrementar_saldo() {
+    fn saldo_deudor() {
         let mut cuenta = setup_cuenta();
 
-        cuenta.incrementar_saldo(20.05);
+        cuenta.saldo_deudor(20.05);
 
-        assert_eq!(cuenta.saldo, 20.05);
+        assert_eq!(cuenta.saldo(), 20.05);
     }
 
     #[test]
-    fn reducir_saldo() {
+    fn saldo_acreedor() {
         let mut cuenta = setup_cuenta();
 
-        cuenta.reducir_saldo(20.05);
-        assert_eq!(cuenta.saldo, -20.05);
+        cuenta.saldo_acreedor(20.05);
+        assert_eq!(cuenta.saldo(), -20.05);
     }
 
     #[test]
@@ -166,6 +152,13 @@ mod cuenta_tests {
         let cuenta = setup_cuenta();
 
         assert_eq!(cuenta.codigo(), "0000".to_string());
+    }
+
+    #[test]
+    fn saldo_devuelve_saldo() {
+        let cuenta = setup_cuenta();
+
+        assert_eq!(cuenta.saldo(), 0.00);
     }
 
     #[test]

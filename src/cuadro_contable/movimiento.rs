@@ -1,6 +1,11 @@
-use super::Cuadro;
+use std::fmt::Display;
 
-/// Representa un movimiento
+use super::cuenta;
+
+/// Representa un movimiento.
+/// Este almacena solo el código de cuenta, puesto que no es probable que las cuentas cambien como tales
+/// y solo deben servir de referencia. Además, al guardarse mediante una referencia, se garantiza que existirán
+/// en el momento de ir a guardarlas.
 #[derive(PartialEq, Debug)]
 pub struct Movimiento {
     importe: f64,
@@ -10,34 +15,42 @@ pub struct Movimiento {
 
 impl Movimiento {
 
-    /// Almacena un movimiento con importe y cuenta.
-    pub fn new(importe: f64, codigo_cuenta: String) -> Movimiento {
-        Movimiento { importe, codigo_cuenta, nombre_cuenta: String::new() }
+    /// Almacena un movimiento con importe y código de cuenta, que toma de una referencia
+    pub fn new(importe: f64, cuenta: &mut cuenta::Cuenta) -> Movimiento {
+        Movimiento { 
+            importe, 
+            codigo_cuenta: cuenta.codigo(),
+            nombre_cuenta: cuenta.nombre(),
+        }
     }
 
-    /// Devuelve el importe.
+    /// Devuelve el importe que figura en el movimiento
     pub fn importe(&self) -> f64 {
         self.importe
     }
 
-    /// Devuelve el nombre y código de la cuenta.
-    pub fn cuenta(&self) -> String {
-        format!("({}) {}", self.codigo_cuenta, self.nombre_cuenta)
+}
+
+impl Display for Movimiento {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}) {} {:.2} €", self.codigo_cuenta, self.nombre_cuenta, self.importe)
     }
+}
 
-    /// Devuelve el codigo de la cuenta.
-    pub fn codigo_cuenta(&self) -> String {
-        self.codigo_cuenta.to_string()
+#[cfg(test)]
+mod movimiento_tests {
+    
+    use super::*;
+
+    #[test]
+    fn new_crea_movimiento() {
+        let mut cuenta = cuenta::Cuenta::new("test", "0000");
+        let movimiento = Movimiento::new(23.07, &mut cuenta);
+
+        assert_eq!(movimiento, Movimiento { 
+            codigo_cuenta: "0000".to_string(), 
+            nombre_cuenta: "test".to_string(), 
+            importe: 23.07
+        });
     }
-
-    /// Hidrata la cuenta, es decir, asigna su nombre al código.
-    pub fn hidratar_cuenta(&mut self, cuadro: &Cuadro) {
-
-        let nombre_cuenta = cuadro.find_cuenta(&self.codigo_cuenta);
-
-        if let Some(v) = nombre_cuenta {
-            self.nombre_cuenta = v.nombre()
-        }
-    }
-
 }
