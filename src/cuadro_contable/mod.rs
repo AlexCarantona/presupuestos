@@ -6,7 +6,7 @@ mod cuenta;
 mod movimiento;
 mod asiento;
 mod cuentas_pgc;
-mod masa;
+pub mod masa;
 
 /// Este struct almacena las cuentas,
 /// y ejecuta las operaciones superficiales relacionadas con ellas
