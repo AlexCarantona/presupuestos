@@ -49,6 +49,8 @@ impl Cuadro {
                 let masa = masa::interpretar_codigo(codigo_cuenta);
                 if let Some(m) = masa {
                     self.crear_cuenta(nombre_cuenta, codigo_cuenta, m)?;
+                } else {
+                    println!("Código perdido al cargar el PGC: {}", codigo_cuenta);
                 }
             };
         } else { 
@@ -113,7 +115,7 @@ mod cuadro_tests {
         let mut cuadro = Cuadro::new();
 
         assert!(cuadro.cargar_pgc().is_ok());
-        assert_eq!(cuadro.cuentas.len(), 902);
+        assert_eq!(cuadro.cuentas.len(), 899);
     }
 
     #[test]

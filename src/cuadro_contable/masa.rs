@@ -50,6 +50,7 @@ pub fn interpretar_codigo(codigo: &str) -> Option<Masa> {
             "6" => Some(Masa::PasivoNoCorriente), // Deudas a largo plazo con asociados
             "7" => Some(Masa::PasivoNoCorriente), // Deudas a largo plazo por préstamos y similares
             "8" => Some(Masa::PasivoNoCorriente), // Deudas a largo plazo por fianzas y garantías
+            "9" => Some(Masa::Patrimonio), // Situaciones transitorias de financiación ???
             _ => None
         },
         "2" => Some(Masa::ActivoNoCorriente), // Inmovilizado
@@ -64,6 +65,7 @@ pub fn interpretar_codigo(codigo: &str) -> Option<Masa> {
             "6" => match n_cuenta { // Personal de la empresa
                 "460" => Some(Masa::ActivoCorriente), // Anticipos de remuneraciones
                 "465" => Some(Masa::PasivoCorriente), // Remuneraciones pendientes de pago
+                "466" => Some(Masa::PasivoCorriente), // Remuneraciones pendientes de pago mediante sistemas de aportación definida
                 _ => None
             },
             "7" => match cuenta { // Administraciones públicas
@@ -75,6 +77,7 @@ pub fn interpretar_codigo(codigo: &str) -> Option<Masa> {
                 "5" => Some(Masa::PasivoCorriente), // Deudas, Hacienda
                 "6" => Some(Masa::PasivoCorriente), // Deudas, SS
                 "7" => Some(Masa::PasivoCorriente), // Deudas, Hacienda (IVA repercutido)
+                "9" => Some(Masa::PasivoCorriente), // Pasivos por diferencias temporarias imponibles
                 _ => None
             },
             "8" => match cuenta { // Gastos e ingresos anticipados
@@ -86,8 +89,16 @@ pub fn interpretar_codigo(codigo: &str) -> Option<Masa> {
             _=> None
         },
         "5" => match subgrupo { // Cuentas financieras
+            "0" => Some(Masa::PasivoCorriente), // Deudas especiales a corto plazo
+            "1" => Some(Masa::PasivoCorriente), // Deudas a corto plazo con terceros
+            "2" => Some(Masa::PasivoCorriente), // Deudas a corto por préstamos recibidos
+            "3" => Some(Masa::ActivoCorriente), // Créditos a corto plazo a partes vinculadas
             "4" => Some(Masa::ActivoNoCorriente), // Créditos a corto plazo
-            "7" => Some(Masa::ActivoCorriente),
+            "5" => Some(Masa::ActivoCorriente), // Cuentas no bancarias
+            "6" => Some(Masa::ActivoCorriente), // Fianzas y depósitos recibidos y constituidos a corto plazo
+            "7" => Some(Masa::ActivoCorriente), // Tesorería
+            "8" => Some(Masa::ActivoNoCorriente), // Activos no corrientes mantenidos para la venta
+            "9" => Some(Masa::ActivoCorriente), // Deterioros de valor
             _ => None
         },
         "6" => Some(Masa::Gasto), // Compras y gastos

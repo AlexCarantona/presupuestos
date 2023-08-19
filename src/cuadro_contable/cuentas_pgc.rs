@@ -1,4 +1,4 @@
-pub const CUENTAS_PGC: [(&str, &str); 902] = [
+pub const CUENTAS_PGC: [(&str, &str); 899] = [
     ("CAPITAL", "10"),
     ("Capital social", "100"),
     ("Fondo social", "101"),
@@ -321,11 +321,9 @@ pub const CUENTAS_PGC: [(&str, &str); 902] = [
     ("Deudores, efectos comerciales impagados", "4415"),
     ("Deudores de dudoso cobro", "446"),
     ("Deudores por operaciones en común", "449"),
-    ("PERSONAL", "46"),
     ("Anticipos de remuneraciones", "460"),
     ("Remuneraciones pendientes de pago", "465"),
     ("Remuneraciones mediante sistemas de aportación definida pendientes de pago", "466"),
-    ("ADMINISTRACIONES PÚBLICAS", "47"),
     ("Hacienda Pública, deudora por diversos conceptos", "470"),
     ("Hacienda Pública, deudora por IVA", "4700"),
     ("Hacienda Pública, deudora por subvenciones concedidas", "4708"),
@@ -345,7 +343,6 @@ pub const CUENTAS_PGC: [(&str, &str); 902] = [
     ("Organismos de la Seguridad Social, acreedores", "476"),
     ("Hacienda Pública, IVA repercutido", "477"),
     ("Pasivos por diferencias temporarias imponibles", "479"),
-    ("AJUSTES POR PERIODIFICACIÓN", "48"),
     ("Gastos anticipados", "480"),
     ("Ingresos anticipados", "485"),
     ("DETERIORO DE VALOR DE CRÉDITOS COMERCIALES Y PROVISIONES A CORTO PLAZO", "49"),
